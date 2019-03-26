@@ -15,18 +15,12 @@ module.exports = function (data) {
                   return;
 
                 var configDir = options.configDir ? options.configDir : './';
-                var configFile = options.filename ? options.filename : '.env';
+                var configFile =  process.env.ENVFILE
 
                 if (path.node.source.value === options.replacedModuleName) {
-                  var babelEnv = process.env.BABEL_ENV;
-                  var env = (!babelEnv || babelEnv === 'development') ? 'development' : 'production';
-                  var platformPath = configFile + '.' + env;
-
-                  if (process.env.ENV_FILE) {
-                    platformPath = process.env.ENV_FILE;
-                  }
-
                   var config = dotEnv.config({ path: sysPath.join(configDir, configFile), silent: true }) || {};
+                  var platformPath = process.env.ENVFILE
+                  
                   var config = Object.assign(config, dotEnv.config({ path: sysPath.join(configDir, platformPath), silent: true }));
 
                   path.node.specifiers.forEach(function(specifier, idx){
@@ -35,16 +29,13 @@ module.exports = function (data) {
                     }
                     var importedId = specifier.imported.name
                     var localId = specifier.local.name;
-
-                    if(!config[importedId]) {
+                    if(!(config.hasOwnProperty(importedId))) {
                       throw path.get('specifiers')[idx].buildCodeFrameError('Try to import dotenv variable "' + importedId + '" which is not defined in any ' + configFile + ' files.')
                     }
 
                     var binding = path.scope.getBinding(localId);
                     binding.referencePaths.forEach(function(refPath){
-                      if (config[importedId]) {
-                        refPath.replaceWith(t.valueToNode(config[importedId]))
-                      }
+                      refPath.replaceWith(t.valueToNode(config[importedId]))
                     });
                   })
 
